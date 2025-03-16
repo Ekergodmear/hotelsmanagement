@@ -65,8 +65,8 @@
                             <select class="form-control @error('room_type_id') is-invalid @enderror" id="room_type_id" name="room_type_id" required>
                                 <option value="">-- Chọn loại phòng --</option>
                                 @foreach($roomTypes as $roomType)
-                                    <option value="{{ $roomType->id }}" {{ old('room_type_id') == $roomType->id ? 'selected' : '' }}>
-                                        {{ $roomType->name }} ({{ number_format($roomType->base_price, 0, ',', '.') }} VNĐ)
+                                    <option value="{{ $roomType->id }}" data-price="{{ $roomType->base_price }}" {{ old('room_type_id') == $roomType->id ? 'selected' : '' }}>
+                                        {{ $roomType->name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -133,10 +133,8 @@
         // Cập nhật giá dựa trên loại phòng
         $('#room_type_id').change(function() {
             var selectedOption = $(this).find('option:selected');
-            var priceText = selectedOption.text().match(/\(([^)]+)\)/);
-
-            if (priceText && priceText[1]) {
-                var price = priceText[1].replace(/\D/g, '');
+            var price = selectedOption.data('price');
+            if (price) {
                 $('#price').val(price);
             }
         });

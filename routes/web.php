@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HotelSearchController;
 use App\Http\Controllers\AirportTransferController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 
 // Routes công khai (không cần đăng nhập)
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -93,6 +94,10 @@ Route::delete('/users/{user}', function($id) {
 
 // Routes yêu cầu đăng nhập (người dùng đã xác thực)
 Route::middleware(['auth'])->group(function () {
+    // Quản lý dịch vụ đặt phòng
+    Route::post('/booking-services', [BookingServiceController::class, 'store'])->name('booking-services.store');
+    Route::delete('/booking-services/{bookingService}', [BookingServiceController::class, 'destroy'])->name('booking-services.destroy');
+
     // Dashboard - Chỉ dành cho admin
     Route::middleware(['admin'])->group(function () {
         // Đã xóa route /dashboard ở đây
@@ -121,6 +126,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/bookings/{booking}/edit', [BookingController::class, 'edit'])->name('bookings.edit');
     Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
     Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
+    Route::get('/bookings/{booking}/success', [BookingController::class, 'success'])->name('bookings.success');
 
     // Yêu thích phòng
     Route::post('/favorites', [FavoriteController::class, 'store'])->name('favorites.store');
@@ -138,11 +144,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
-    // API lấy danh sách quận/huyện và phường/xã
-    Route::get('/get-districts', [AdminHotelController::class, 'getDistricts'])->name('admin.get-districts');
-    Route::get('/get-wards', [AdminHotelController::class, 'getWards'])->name('admin.get-wards');
-
     // Quản lý khách sạn
+    Route::get('hotels/get-districts', [AdminHotelController::class, 'getDistricts'])->name('admin.hotels.getDistricts');
+    Route::get('hotels/get-wards', [AdminHotelController::class, 'getWards'])->name('admin.hotels.getWards');
     Route::resource('hotels', AdminHotelController::class)->names([
         'index' => 'admin.hotels.index',
         'create' => 'admin.hotels.create',
@@ -189,20 +193,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::patch('bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('admin.bookings.check-in');
     Route::patch('bookings/{booking}/check-out', [AdminBookingController::class, 'checkOut'])->name('admin.bookings.check-out');
 
-    // Quản lý dịch vụ đặt phòng
-    Route::post('booking-services', [BookingServiceController::class, 'store'])->name('admin.booking-services.store');
-    Route::delete('booking-services/{bookingService}', [BookingServiceController::class, 'destroy'])->name('admin.booking-services.destroy');
-
     // Quản lý dịch vụ
-    Route::resource('services', ServiceController::class)->names([
-        'index' => 'admin.services.index',
-        'create' => 'admin.services.create',
-        'store' => 'admin.services.store',
-        'show' => 'admin.services.show',
-        'edit' => 'admin.services.edit',
-        'update' => 'admin.services.update',
-        'destroy' => 'admin.services.destroy',
-    ]);
+    Route::resource('services', AdminServiceController::class);
 
     // Quản lý người dùng
     Route::resource('users', AdminUserController::class)->names([

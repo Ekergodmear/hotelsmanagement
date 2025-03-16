@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\Room;
 use Illuminate\Http\RedirectResponse;
+use App\Models\Service;
+use Illuminate\View\View;
 
 class BookingController extends Controller
 {
@@ -56,14 +58,10 @@ class BookingController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Booking $booking): View
     {
-        $booking = Booking::with(['user', 'room', 'room.roomType', 'services', 'services.service'])
-            ->findOrFail($id);
-
-        $availableServices = \App\Models\Service::where('status', 'active')->get();
-
-        return view('admin.bookings.show', compact('booking', 'availableServices'));
+        $services = Service::where('is_active', true)->get();
+        return view('admin.bookings.show', compact('booking', 'services'));
     }
 
     /**
@@ -71,7 +69,11 @@ class BookingController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $booking = Booking::findOrFail($id);
+        $rooms = Room::where('status', 'available')
+            ->orWhere('id', $booking->room_id)
+            ->get();
+        return view('admin.bookings.edit', compact('booking', 'rooms'));
     }
 
     /**
@@ -79,7 +81,51 @@ class BookingController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $booking = Booking::findOrFail($id);
+
+        $validated = $request->validate([
+            'room_id' => 'required|exists:rooms,id',
+            'check_in' => 'required|date',
+            'check_out' => 'required|date|after:check_in',
+            'adults' => 'required|integer|min:1',
+            'children' => 'nullable|integer|min:0',
+            'special_requests' => 'nullable|string',
+            'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled',
+            'guest_name' => 'required|string|max:255',
+            'guest_email' => 'required|email|max:255',
+            'guest_phone' => 'required|string|max:20',
+        ]);
+
+        // Nếu phòng thay đổi
+        if ($booking->room_id != $validated['room_id']) {
+            // Cập nhật trạng thái phòng cũ
+            $oldRoom = Room::findOrFail($booking->room_id);
+            $oldRoom->update(['status' => 'available']);
+
+            // Cập nhật trạng thái phòng mới
+            $newRoom = Room::findOrFail($validated['room_id']);
+            $newRoom->update(['status' => 'occupied']);
+        }
+
+        // Tính lại tổng tiền
+        $room = Room::findOrFail($validated['room_id']);
+        $checkIn = new \DateTime($validated['check_in']);
+        $checkOut = new \DateTime($validated['check_out']);
+        $days = $checkIn->diff($checkOut)->days;
+        $totalPrice = $room->price * $days;
+
+        if ($booking->has_airport_transfer) {
+            $totalPrice += $booking->transfer_price;
+        }
+
+        // Thêm thông tin vào mảng validated
+        $validated['total_price'] = $totalPrice;
+
+        // Cập nhật đặt phòng
+        $booking->update($validated);
+
+        return redirect()->route('admin.bookings.show', $booking)
+            ->with('success', 'Thông tin đặt phòng đã được cập nhật thành công.');
     }
 
     /**
@@ -87,7 +133,17 @@ class BookingController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $booking = Booking::findOrFail($id);
+
+        // Cập nhật trạng thái phòng thành available
+        $room = Room::findOrFail($booking->room_id);
+        $room->update(['status' => 'available']);
+
+        // Xóa đặt phòng
+        $booking->delete();
+
+        return redirect()->route('admin.bookings.index')
+            ->with('success', 'Đặt phòng đã được xóa thành công.');
     }
 
     /**

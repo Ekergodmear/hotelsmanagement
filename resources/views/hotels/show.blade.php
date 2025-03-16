@@ -733,7 +733,7 @@
                             </div>
                         </div>
                         <div class="col-md-4 d-flex align-items-center justify-content-center">
-                            <img src="{{ asset('images/airport-transfer.jpg') }}" alt="Airport Transfer" class="img-fluid rounded" style="max-height: 250px;">
+                            <img src="{{ asset('images/airport-transfers/default-sedan.jpg') }}" alt="Airport Transfer" class="img-fluid rounded" style="max-height: 250px;">
                         </div>
                     </div>
                 </div>
@@ -747,140 +747,86 @@
 <script>
     function changeMainImage(src, thumbnail) {
         document.getElementById('mainImage').src = src;
-
-        // Remove active class from all thumbnails
         document.querySelectorAll('.hotel-thumbnail').forEach(thumb => {
             thumb.classList.remove('active');
         });
-
-        // Add active class to clicked thumbnail
         thumbnail.classList.add('active');
     }
 
-    // Xử lý ngày check-in và check-out
+    // Xử lý form tìm kiếm phòng
     document.addEventListener('DOMContentLoaded', function() {
         const checkInInput = document.getElementById('check_in');
         const checkOutInput = document.getElementById('check_out');
 
-        // Cập nhật ngày check-out tối thiểu khi ngày check-in thay đổi
         checkInInput.addEventListener('change', function() {
             const checkInDate = new Date(this.value);
             const nextDay = new Date(checkInDate);
             nextDay.setDate(nextDay.getDate() + 1);
-
-            // Định dạng ngày thành YYYY-MM-DD
             const year = nextDay.getFullYear();
             const month = String(nextDay.getMonth() + 1).padStart(2, '0');
             const day = String(nextDay.getDate()).padStart(2, '0');
             const formattedDate = `${year}-${month}-${day}`;
-
             checkOutInput.min = formattedDate;
-
-            // Nếu ngày check-out hiện tại nhỏ hơn ngày check-in + 1, cập nhật nó
             if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
                 checkOutInput.value = formattedDate;
             }
         });
 
-        // Kiểm tra khi form được gửi
         const searchForm = document.querySelector('.search-form-container form');
         searchForm.addEventListener('submit', function(event) {
             const checkIn = new Date(checkInInput.value);
             const checkOut = new Date(checkOutInput.value);
-
-            // Kiểm tra nếu ngày check-out <= ngày check-in
             if (checkOut <= checkIn) {
                 event.preventDefault();
                 alert('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày');
                 return false;
             }
-
-            // Kiểm tra nếu khoảng thời gian quá dài (ví dụ: > 30 ngày)
             const diffTime = Math.abs(checkOut - checkIn);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
             if (diffDays > 30) {
                 event.preventDefault();
                 alert('Thời gian đặt phòng không được vượt quá 30 ngày');
                 return false;
             }
-
             return true;
         });
     });
 
-    // Biến toàn cục để kiểm tra trạng thái Google Maps
-    let mapLoaded = false;
-
     // Google Maps
     function initMap() {
-        try {
-            // Đánh dấu Google Maps đã tải
-            mapLoaded = true;
+        const hotelLocation = {
+            lat: {{ $hotel->latitude ?? 10.762622 }},
+            lng: {{ $hotel->longitude ?? 106.660172 }}
+        };
 
-            // Tọa độ mặc định (có thể thay đổi dựa trên dữ liệu thực tế của khách sạn)
-            const hotelLocation = { lat: 10.762622, lng: 106.660172 }; // Tọa độ mặc định (TP.HCM)
+        const map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: hotelLocation,
+            mapTypeControl: true,
+            streetViewControl: true,
+            fullscreenControl: true
+        });
 
-            const map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 15,
-                center: hotelLocation,
-                mapTypeControl: true,
-                streetViewControl: true,
-                fullscreenControl: true
-            });
+        const marker = new google.maps.Marker({
+            position: hotelLocation,
+            map: map,
+            title: '{{ $hotel->name }}'
+        });
 
-            // Đánh dấu vị trí khách sạn
-            const marker = new google.maps.Marker({
-                position: hotelLocation,
-                map: map,
-                title: "{{ $hotel->name }}",
-                animation: google.maps.Animation.DROP
-            });
+        const infowindow = new google.maps.InfoWindow({
+            content: '<div style="padding: 10px;"><strong>{{ $hotel->name }}</strong><br>{{ $hotel->address }}</div>'
+        });
 
-            // Thêm info window
-            const infoWindow = new google.maps.InfoWindow({
-                content: '<div style="padding: 10px;"><strong>{{ $hotel->name }}</strong><br>{{ $hotel->address }}</div>'
-            });
+        marker.addListener('click', () => {
+            infowindow.open(map, marker);
+        });
 
-            marker.addListener('click', function() {
-                infoWindow.open(map, marker);
-            });
-
-            // Mở info window mặc định
-            infoWindow.open(map, marker);
-        } catch (error) {
-            console.error("Google Maps error:", error);
-            showStaticMap();
-        }
+        infowindow.open(map, marker);
     }
-
-    // Hiển thị bản đồ tĩnh khi Google Maps không tải được
-    function showStaticMap() {
-        document.getElementById("map").innerHTML = `
-            <div class="p-4 text-center">
-                <p class="text-danger mb-2"><i class="fas fa-exclamation-triangle"></i> Không thể tải bản đồ động</p>
-                <img src="https://maps.googleapis.com/maps/api/staticmap?center=10.762622,106.660172&zoom=15&size=600x300&markers=color:red%7C10.762622,106.660172&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"
-                     alt="Static Map" class="img-fluid rounded">
-                <p class="text-muted mt-2 small">Bản đồ tĩnh: {{ $hotel->address }}, {{ $hotel->district }}, {{ $hotel->province_city }}</p>
-            </div>
-        `;
-    }
-
-    // Kiểm tra nếu Google Maps không tải được sau 3 giây
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            if (!mapLoaded) {
-                console.warn("Google Maps không tải được, sử dụng bản đồ tĩnh thay thế");
-                showStaticMap();
-            }
-        }, 3000);
-    });
 </script>
 
-<!-- Tải Google Maps API với callback -->
 <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&callback=initMap&v=weekly"
-    onerror="showStaticMap()">
+    src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initMap">
 </script>
 @endsection
 

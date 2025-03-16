@@ -26,13 +26,24 @@ class BookingController extends Controller
      */
     public function create(Request $request): View
     {
-        $users = User::where('role', 'user')->get();
-        $rooms = Room::where('status', 'available')->get();
+        // Lấy thông tin từ request
         $roomId = $request->input('room_id');
         $checkIn = $request->input('check_in');
         $checkOut = $request->input('check_out');
+        $guests = $request->input('guests', 2);
 
-        return view('bookings.create', compact('users', 'rooms', 'roomId', 'checkIn', 'checkOut'));
+        // Kiểm tra và lấy thông tin phòng
+        $room = Room::with(['roomType', 'primaryImage'])->findOrFail($roomId);
+        $rooms = collect([$room]);
+
+        return view('bookings.create', compact(
+            'room',
+            'rooms',
+            'roomId',
+            'checkIn',
+            'checkOut',
+            'guests'
+        ));
     }
 
     /**
@@ -41,34 +52,86 @@ class BookingController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'phone' => 'required|string',
             'room_id' => 'required|exists:rooms,id',
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
-            'adults' => 'required|integer|min:1',
-            'children' => 'nullable|integer|min:0',
+            'adults' => 'required|integer|min:1|max:10',
+            'children' => 'nullable|integer|min:0|max:5',
             'special_requests' => 'nullable|string',
+            'services' => 'nullable|array',
+            'services.*' => 'in:airport_pickup,airport_dropoff,breakfast,dinner'
         ]);
 
-        // Tính tổng tiền
+        // Tính tổng tiền phòng
         $room = Room::findOrFail($validated['room_id']);
         $checkIn = new \DateTime($validated['check_in']);
         $checkOut = new \DateTime($validated['check_out']);
-        $days = $checkIn->diff($checkOut)->days;
-        $totalPrice = $room->roomType->base_price * $days;
+        $nights = $checkIn->diff($checkOut)->days;
+        $totalPrice = $room->price * $nights;
 
-        // Thêm thông tin vào mảng validated
-        $validated['total_price'] = $totalPrice;
-        $validated['status'] = 'confirmed';
+        // Tính tiền dịch vụ bổ sung
+        $services = $request->input('services', []);
+        $servicePrices = [
+            'airport_pickup' => 300000,
+            'airport_dropoff' => 300000,
+            'breakfast' => 150000,
+            'dinner' => 250000
+        ];
+
+        foreach ($services as $service) {
+            if (in_array($service, ['airport_pickup', 'airport_dropoff'])) {
+                $totalPrice += $servicePrices[$service];
+            } else if (in_array($service, ['breakfast', 'dinner'])) {
+                $totalPrice += $servicePrices[$service] * ($validated['adults'] + ($validated['children'] ?? 0)) * $nights;
+            }
+        }
 
         // Tạo đặt phòng
-        $booking = Booking::create($validated);
+        $booking = Booking::create([
+            'user_id' => auth()->id(),
+            'room_id' => $validated['room_id'],
+            'check_in' => $validated['check_in'],
+            'check_out' => $validated['check_out'],
+            'adults' => $validated['adults'],
+            'children' => $validated['children'],
+            'special_requests' => $validated['special_requests'],
+            'total_price' => $totalPrice,
+            'status' => 'confirmed',
+            'guest_name' => $validated['name'],
+            'guest_email' => $validated['email'],
+            'guest_phone' => $validated['phone']
+        ]);
+
+        // Lưu các dịch vụ đã chọn
+        if (!empty($services)) {
+            foreach ($services as $service) {
+                $booking->bookingServices()->create([
+                    'service_name' => $service,
+                    'price' => $servicePrices[$service]
+                ]);
+            }
+        }
 
         // Cập nhật trạng thái phòng
         $room->update(['status' => 'occupied']);
 
-        return redirect()->route('bookings.show', $booking)
-            ->with('success', 'Đặt phòng đã được tạo thành công.');
+        // Gửi email xác nhận đặt phòng
+        // TODO: Implement email notification
+
+        return redirect()->route('bookings.success', $booking)
+            ->with('success', 'Đặt phòng thành công! Chúng tôi sẽ gửi email xác nhận cho bạn trong giây lát.');
+    }
+
+    /**
+     * Hiển thị trang xác nhận đặt phòng thành công.
+     */
+    public function success(Booking $booking): View
+    {
+        $booking->load(['room.roomType', 'bookingServices']);
+        return view('bookings.success', compact('booking'));
     }
 
     /**

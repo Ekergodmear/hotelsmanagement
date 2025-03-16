@@ -14,12 +14,16 @@ class Booking extends Model
     protected $fillable = [
         'user_id',
         'room_id',
-        'guest_id',
         'check_in',
         'check_out',
-        'guests',
+        'adults',
+        'children',
         'total_price',
         'status',
+        'special_requests',
+        'guest_name',
+        'guest_email',
+        'guest_phone',
         'has_airport_transfer',
         'airport_name',
         'transfer_datetime',
@@ -31,8 +35,10 @@ class Booking extends Model
     ];
 
     protected $casts = [
-        'check_in' => 'date',
-        'check_out' => 'date',
+        'check_in' => 'datetime',
+        'check_out' => 'datetime',
+        'adults' => 'integer',
+        'children' => 'integer',
         'transfer_datetime' => 'datetime',
         'has_airport_transfer' => 'boolean',
         'total_price' => 'decimal:2',
@@ -42,7 +48,7 @@ class Booking extends Model
     /**
      * Get the user that owns the booking.
      */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
@@ -50,7 +56,7 @@ class Booking extends Model
     /**
      * Get the room that owns the booking.
      */
-    public function room(): BelongsTo
+    public function room()
     {
         return $this->belongsTo(Room::class);
     }
@@ -58,7 +64,7 @@ class Booking extends Model
     /**
      * Get the services for the booking.
      */
-    public function services(): HasMany
+    public function bookingServices(): HasMany
     {
         return $this->hasMany(BookingService::class);
     }

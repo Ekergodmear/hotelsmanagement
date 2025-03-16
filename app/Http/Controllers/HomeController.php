@@ -22,9 +22,9 @@ class HomeController extends Controller
 
         // Lấy các phòng nổi bật (phòng có giá cao nhất)
         $rooms = Room::with(['hotel', 'roomType'])
-            ->whereHas('roomType', function($query) {
-                $query->orderBy('base_price', 'desc');
-            })
+            ->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
+            ->orderBy('room_types.base_price', 'desc')
+            ->select('rooms.*')
             ->take(6)
             ->get();
 

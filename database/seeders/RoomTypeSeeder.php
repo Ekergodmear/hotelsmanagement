@@ -11,28 +11,28 @@ class RoomTypeSeeder extends Seeder
     {
         $roomTypes = [
             [
-                'name' => 'Phòng Đơn',
-                'description' => 'Phòng 1 giường đơn, phù hợp cho 1 người',
-                'base_price' => 500000,
-                'capacity' => 1,
-            ],
-            [
-                'name' => 'Phòng Đôi',
-                'description' => 'Phòng 1 giường đôi, phù hợp cho 2 người',
+                'name' => 'Phòng Tiêu Chuẩn',
+                'description' => 'Phòng tiêu chuẩn thoải mái với đầy đủ tiện nghi cơ bản.',
                 'base_price' => 800000,
                 'capacity' => 2,
             ],
             [
-                'name' => 'Phòng Gia Đình',
-                'description' => 'Phòng 2 giường đôi, phù hợp cho gia đình',
+                'name' => 'Phòng Deluxe',
+                'description' => 'Phòng rộng rãi với tầm nhìn đẹp và tiện nghi cao cấp.',
                 'base_price' => 1200000,
-                'capacity' => 4,
+                'capacity' => 2,
             ],
             [
                 'name' => 'Phòng Suite',
-                'description' => 'Phòng cao cấp với không gian rộng rãi',
+                'description' => 'Phòng suite sang trọng với phòng khách riêng biệt và không gian rộng rãi.',
                 'base_price' => 2000000,
-                'capacity' => 2,
+                'capacity' => 3,
+            ],
+            [
+                'name' => 'Phòng Gia Đình',
+                'description' => 'Phòng rộng rãi phù hợp cho gia đình với nhiều giường và tiện nghi đầy đủ.',
+                'base_price' => 1500000,
+                'capacity' => 4,
             ],
         ];
 

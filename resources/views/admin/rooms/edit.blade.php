@@ -68,7 +68,7 @@ use Illuminate\Support\Str;
                             <select class="form-control @error('room_type_id') is-invalid @enderror" id="room_type_id" name="room_type_id" required>
                                 @foreach($roomTypes as $roomType)
                                     <option value="{{ $roomType->id }}" {{ $room->room_type_id == $roomType->id ? 'selected' : '' }}>
-                                        {{ $roomType->name }} ({{ number_format($roomType->base_price, 0, ',', '.') }} VNĐ)
+                                        {{ $roomType->name }}
                                     </option>
                                 @endforeach
                             </select>

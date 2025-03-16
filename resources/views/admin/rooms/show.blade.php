@@ -122,10 +122,15 @@ use Illuminate\Support\Str;
                                             <h5 class="font-weight-bold">Tiện nghi</h5>
                                             <div class="row">
                                                 @if($room->roomType->amenities)
-                                                    @foreach(is_array($room->roomType->amenities) ? $room->roomType->amenities : json_decode($room->roomType->amenities, true) ?? [])
-                                                    <div class="col-md-4 mb-2">
-                                                        <i class="fas fa-check text-success"></i> {{ $amenity }}
-                                                    </div>
+                                                    @php
+                                                        $amenities = is_array($room->roomType->amenities)
+                                                            ? $room->roomType->amenities
+                                                            : json_decode($room->roomType->amenities, true) ?? [];
+                                                    @endphp
+                                                    @foreach($amenities as $amenity)
+                                                        <div class="col-md-4 mb-2">
+                                                            <i class="fas fa-check text-success"></i> {{ $amenity }}
+                                                        </div>
                                                     @endforeach
                                                 @else
                                                     <div class="col-12">

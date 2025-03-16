@@ -7,6 +7,7 @@ use App\Models\Hotel;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\HotelImage;
+use App\Models\RoomImage;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,8 +16,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Chạy seeder nhập dữ liệu địa điểm
-        $this->call(LocationSeeder::class);
+        $this->call([
+            LocationSeeder::class,
+            ImageSeeder::class,
+            RoomTypeSeeder::class,
+            AdminUserSeeder::class,
+        ]);
 
         // Tạo các loại phòng
         $roomTypes = [
@@ -125,72 +130,40 @@ class DatabaseSeeder extends Seeder
             $hotel = Hotel::create($hotelData);
 
             // Tạo 5 ảnh cho mỗi khách sạn
-            $this->createHotelImages($hotel);
+            $this->createHotelImages($hotel->id, $hotel->city);
 
             // Tạo 4 phòng cho mỗi khách sạn (1 phòng mỗi loại)
             $this->createRooms($hotel);
         }
+
+        // Chạy RoomImageSeeder sau khi đã tạo xong phòng
+        $this->call([
+            RoomImageSeeder::class,
+        ]);
     }
 
     /**
      * Tạo ảnh cho khách sạn
      */
-    private function createHotelImages($hotel)
+    private function createHotelImages($hotelId, $city)
     {
-        $citySlug = strtolower(str_replace(' ', '', $hotel->city));
-        $hotelSlug = strtolower(str_replace([' ', '&'], ['', ''], $hotel->name));
-
-        $imageUrls = [
-            // Hình ảnh cho khách sạn ở Hà Nội
-            'Hà Nội' => [
-                'https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1562778612-e1e0cda9915c?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=1600&auto=format&fit=crop',
-            ],
-            // Hình ảnh cho khách sạn ở Hồ Chí Minh
-            'Hồ Chí Minh' => [
-                'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1564501049412-61c2a3083791?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=1600&auto=format&fit=crop',
-            ],
-            // Hình ảnh cho khách sạn ở Đà Nẵng
-            'Đà Nẵng' => [
-                'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1564501049412-61c2a3083791?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=1600&auto=format&fit=crop',
-            ],
-            // Hình ảnh cho khách sạn ở Nha Trang
-            'Nha Trang' => [
-                'https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop',
-            ],
-            // Hình ảnh cho khách sạn ở Phú Quốc
-            'Phú Quốc' => [
-                'https://images.unsplash.com/photo-1615880484746-a134be9a6ecf?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=1600&auto=format&fit=crop',
-                'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=1600&auto=format&fit=crop',
-            ],
+        $cityMapping = [
+            'Hà Nội' => 'hanoi',
+            'Hồ Chí Minh' => 'hochiminh',
+            'Đà Nẵng' => 'danang',
+            'Nha Trang' => 'nhatrang',
+            'Phú Quốc' => 'phuquoc'
         ];
 
-        $images = $imageUrls[$hotel->city];
+        $citySlug = $cityMapping[$city] ?? strtolower(str_replace([' ', 'á', 'à', 'ã', 'ạ', 'ả', 'ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ', 'â', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ', 'đ', 'é', 'è', 'ẻ', 'ẽ', 'ẹ', 'ê', 'ế', 'ề', 'ể', 'ễ', 'ệ', 'í', 'ì', 'ỉ', 'ĩ', 'ị', 'ó', 'ò', 'ỏ', 'õ', 'ọ', 'ô', 'ố', 'ồ', 'ổ', 'ỗ', 'ộ', 'ơ', 'ớ', 'ờ', 'ở', 'ỡ', 'ợ', 'ú', 'ù', 'ủ', 'ũ', 'ụ', 'ư', 'ứ', 'ừ', 'ử', 'ữ', 'ự', 'ý', 'ỳ', 'ỷ', 'ỹ', 'ỵ'], ['', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'd', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'y', 'y', 'y', 'y', 'y'], $city));
 
-        foreach ($images as $index => $imageUrl) {
+        $imageCount = 5;
+        for ($i = 1; $i <= $imageCount; $i++) {
             HotelImage::create([
-                'hotel_id' => $hotel->id,
-                'image_path' => $imageUrl,
-                'is_primary' => $index === 0, // Ảnh đầu tiên là ảnh chính
-                'display_order' => $index + 1,
+                'hotel_id' => $hotelId,
+                'image_path' => 'hotels/' . $citySlug . $i . '.jpg',
+                'is_primary' => $i === 1,
+                'display_order' => $i
             ]);
         }
     }

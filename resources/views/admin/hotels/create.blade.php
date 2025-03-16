@@ -37,19 +37,72 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="city">Thành phố <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('city') is-invalid @enderror" id="city" name="city" value="{{ old('city') }}" required>
-                                    @error('city')
+                                    <label for="province_id">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('province_id') is-invalid @enderror" id="province_id" name="province_id" required>
+                                        <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                        @foreach($provinces as $province)
+                                            <option value="{{ $province->id }}" {{ old('province_id') == $province->id ? 'selected' : '' }}>
+                                                {{ $province->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('province_id')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="country">Quốc gia <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('country') is-invalid @enderror" id="country" name="country" value="{{ old('country', 'Việt Nam') }}" required>
-                                    @error('country')
+                                    <label for="district_id">Quận/Huyện <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('district_id') is-invalid @enderror" id="district_id" name="district_id" required>
+                                        <option value="">-- Chọn Quận/Huyện --</option>
+                                    </select>
+                                    @error('district_id')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="ward_id">Phường/Xã <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('ward_id') is-invalid @enderror" id="ward_id" name="ward_id" required>
+                                        <option value="">-- Chọn Phường/Xã --</option>
+                                    </select>
+                                    @error('ward_id')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Tiện ích</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="wifi" name="amenities[]" value="wifi" {{ in_array('wifi', (array)old('amenities', [])) ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="wifi">Wifi miễn phí</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="pool" name="amenities[]" value="pool" {{ in_array('pool', (array)old('amenities', [])) ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="pool">Hồ bơi</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="restaurant" name="amenities[]" value="restaurant" {{ in_array('restaurant', (array)old('amenities', [])) ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="restaurant">Nhà hàng</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="spa" name="amenities[]" value="spa" {{ in_array('spa', (array)old('amenities', [])) ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="spa">Spa</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="gym" name="amenities[]" value="gym" {{ in_array('gym', (array)old('amenities', [])) ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="gym">Phòng tập gym</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="parking" name="amenities[]" value="parking" {{ in_array('parking', (array)old('amenities', [])) ? 'checked' : '' }}>
+                                                <label class="custom-control-label" for="parking">Bãi đậu xe</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="form-group">
@@ -144,7 +197,92 @@
 
 @push('scripts')
 <script>
+    console.log('Script starting...');
+    console.log('jQuery version:', typeof $ !== 'undefined' ? $.fn.jquery : 'jQuery not loaded');
+
+    // Set CSRF token cho tất cả các Ajax request
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
     $(document).ready(function() {
+        console.log('Document ready...');
+        // Xử lý dropdown tỉnh/thành phố
+        $('#province_id').change(function() {
+            var provinceId = $(this).val();
+            console.log('Province ID selected:', provinceId);
+
+            if (provinceId) {
+                $.ajax({
+                    url: "{{ route('admin.hotels.getDistricts') }}",
+                    type: 'GET',
+                    data: { province_id: provinceId },
+                    beforeSend: function() {
+                        console.log('Sending request for districts...');
+                    },
+                    success: function(data) {
+                        console.log('Districts received:', data);
+                        $('#district_id').empty();
+                        $('#district_id').append('<option value="">-- Chọn Quận/Huyện --</option>');
+                        $('#ward_id').empty();
+                        $('#ward_id').append('<option value="">-- Chọn Phường/Xã --</option>');
+
+                        $.each(data, function(key, value) {
+                            $('#district_id').append('<option value="'+ value.id +'">'+ value.name +'</option>');
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('XHR:', xhr);
+                        console.log('Status:', status);
+                        console.log('Error:', error);
+                        alert('Có lỗi khi tải danh sách quận/huyện. Vui lòng thử lại.');
+                    }
+                });
+            } else {
+                $('#district_id').empty();
+                $('#district_id').append('<option value="">-- Chọn Quận/Huyện --</option>');
+                $('#ward_id').empty();
+                $('#ward_id').append('<option value="">-- Chọn Phường/Xã --</option>');
+            }
+        });
+
+        // Xử lý dropdown quận/huyện
+        $('#district_id').change(function() {
+            var districtId = $(this).val();
+            console.log('District ID selected:', districtId);
+
+            if (districtId) {
+                $.ajax({
+                    url: "{{ route('admin.hotels.getWards') }}",
+                    type: 'GET',
+                    data: { district_id: districtId },
+                    beforeSend: function() {
+                        console.log('Sending request for wards...');
+                    },
+                    success: function(data) {
+                        console.log('Wards received:', data);
+                        $('#ward_id').empty();
+                        $('#ward_id').append('<option value="">-- Chọn Phường/Xã --</option>');
+
+                        $.each(data, function(key, value) {
+                            $('#ward_id').append('<option value="'+ value.id +'">'+ value.name +'</option>');
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('XHR:', xhr);
+                        console.log('Status:', status);
+                        console.log('Error:', error);
+                        alert('Có lỗi khi tải danh sách phường/xã. Vui lòng thử lại.');
+                    }
+                });
+            } else {
+                $('#ward_id').empty();
+                $('#ward_id').append('<option value="">-- Chọn Phường/Xã --</option>');
+            }
+        });
+
         // Hiển thị tên file khi chọn
         $('.custom-file-input').on('change', function() {
             var fileName = $(this).val().split('\\').pop();

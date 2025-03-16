@@ -55,39 +55,66 @@ class HotelController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:255',
-            'province_city' => 'required|exists:provinces,id',
-            'district' => 'required|exists:districts,id',
-            'ward' => 'nullable|exists:wards,id',
-            'description' => 'required|string',
-            'rating' => 'nullable|numeric|min:0|max:10',
-            'price_per_night' => 'required|numeric|min:0',
+            'province_id' => 'required|exists:provinces,id',
+            'district_id' => 'required|exists:districts,id',
+            'ward_id' => 'required|exists:wards,id',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'description' => 'nullable|string',
+            'star_rating' => 'nullable|integer|min:1|max:5',
             'amenities' => 'nullable|array',
             'amenities.*' => 'string|in:wifi,pool,restaurant,spa,gym,parking',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'is_featured' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'gallery.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        if (isset($validated['amenities'])) {
-            $validated['amenities'] = json_encode($validated['amenities']);
-        }
-
         // Lấy tên tỉnh/thành phố, quận/huyện, phường/xã
-        $province = Province::find($validated['province_city']);
-        $district = District::find($validated['district']);
-        $ward = null;
-        if (!empty($validated['ward'])) {
-            $ward = Ward::find($validated['ward']);
+        $province = Province::find($validated['province_id']);
+        $district = District::find($validated['district_id']);
+        $ward = Ward::find($validated['ward_id']);
+
+        // Tạo khách sạn với dữ liệu cơ bản
+        $hotel = new Hotel();
+        $hotel->name = $validated['name'];
+        $hotel->address = $validated['address'];
+        $hotel->province_city = $province->name;
+        $hotel->district = $district->name;
+        $hotel->ward = $ward->name;
+        $hotel->country = 'Việt Nam'; // Mặc định là Việt Nam
+        $hotel->phone = $validated['phone'] ?? null;
+        $hotel->email = $validated['email'] ?? null;
+        $hotel->description = $validated['description'] ?? null;
+        $hotel->star_rating = $validated['star_rating'] ?? null;
+        $hotel->amenities = isset($validated['amenities']) ? json_encode($validated['amenities']) : null;
+        $hotel->is_featured = $validated['is_featured'] ?? false;
+        $hotel->is_active = $validated['is_active'] ?? true;
+        $hotel->save();
+
+        // Xử lý ảnh chính
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $path = $image->store('hotels', 'public');
+
+            HotelImage::create([
+                'hotel_id' => $hotel->id,
+                'image_path' => $path,
+                'is_primary' => true
+            ]);
         }
 
-        // Gán giá trị tên thay vì ID
-        $validated['province_city'] = $province->name;
-        $validated['district'] = $district->name;
-        $validated['ward'] = $ward ? $ward->name : null;
+        // Xử lý bộ sưu tập ảnh
+        if ($request->hasFile('gallery')) {
+            foreach ($request->file('gallery') as $image) {
+                $path = $image->store('hotels', 'public');
 
-        $hotel = Hotel::create($validated);
-
-        // Xử lý tải lên nhiều ảnh
-        if ($request->hasFile('images')) {
-            $this->uploadHotelImages($request->file('images'), $hotel);
+                HotelImage::create([
+                    'hotel_id' => $hotel->id,
+                    'image_path' => $path,
+                    'is_primary' => false
+                ]);
+            }
         }
 
         return redirect()->route('admin.hotels.index')
@@ -225,8 +252,14 @@ class HotelController extends Controller
      */
     public function getDistricts(Request $request)
     {
-        $provinceId = $request->province_id;
-        $districts = District::where('province_id', $provinceId)->orderBy('name')->get();
+        $request->validate([
+            'province_id' => 'required|exists:provinces,id'
+        ]);
+
+        $districts = District::where('province_id', $request->province_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return response()->json($districts);
     }
 
@@ -235,8 +268,14 @@ class HotelController extends Controller
      */
     public function getWards(Request $request)
     {
-        $districtId = $request->district_id;
-        $wards = Ward::where('district_id', $districtId)->orderBy('name')->get();
+        $request->validate([
+            'district_id' => 'required|exists:districts,id'
+        ]);
+
+        $wards = Ward::where('district_id', $request->district_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return response()->json($wards);
     }
 

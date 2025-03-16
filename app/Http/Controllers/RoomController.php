@@ -199,7 +199,7 @@ class RoomController extends Controller
 
         if ($sortBy === 'price') {
             $query->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
-                  ->orderBy('room_types.base_price', $sortOrder)
+                  ->orderBy('room_types.base_price', 'asc')
                   ->select('rooms.*');
         } else {
             $query->orderBy($sortBy, $sortOrder);

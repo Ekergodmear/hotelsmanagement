@@ -12,11 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('hotels', function (Blueprint $table) {
+            // Thêm cột province_city
+            $table->string('province_city', 100)->nullable();
+
             // Thêm cột district sau cột province_city
-            $table->string('district', 100)->after('province_city')->nullable();
+            $table->string('district', 100)->nullable();
 
             // Thêm cột ward sau cột district
-            $table->string('ward', 100)->after('district')->nullable();
+            $table->string('ward', 100)->nullable();
         });
     }
 
@@ -26,11 +29,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('hotels', function (Blueprint $table) {
-            // Xóa cột ward
+            // Xóa các cột theo thứ tự ngược lại
             $table->dropColumn('ward');
-
-            // Xóa cột district
             $table->dropColumn('district');
+            $table->dropColumn('province_city');
         });
     }
 };

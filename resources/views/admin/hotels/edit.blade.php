@@ -208,7 +208,7 @@
             if (provinceId) {
                 // Lấy danh sách quận/huyện
                 $.ajax({
-                    url: "{{ route('admin.get-districts') }}",
+                    url: "{{ route('admin.hotels.getDistricts') }}",
                     type: "GET",
                     data: { province_id: provinceId },
                     success: function(data) {
@@ -237,7 +237,7 @@
             if (districtId) {
                 // Lấy danh sách phường/xã
                 $.ajax({
-                    url: "{{ route('admin.get-wards') }}",
+                    url: "{{ route('admin.hotels.getWards') }}",
                     type: "GET",
                     data: { district_id: districtId },
                     success: function(data) {
@@ -255,41 +255,34 @@
         });
     });
 
-    // Xem trước ảnh
+    // Xử lý preview ảnh
     function previewImages(input) {
-        // Xóa ảnh cũ
-        $('.existing-image').hide();
-
-        var preview = document.getElementById('image-preview-container');
-        preview.innerHTML = '';
+        var container = document.getElementById('image-preview-container');
+        container.innerHTML = '';
 
         if (input.files) {
-            // Giới hạn số lượng ảnh
-            var maxFiles = 5;
-            var filesToPreview = Array.from(input.files).slice(0, maxFiles);
-
-            if (input.files.length > maxFiles) {
-                alert('Bạn chỉ có thể tải lên tối đa ' + maxFiles + ' ảnh.');
-            }
-
-            filesToPreview.forEach(function(file) {
+            var filesAmount = input.files.length;
+            for (var i = 0; i < filesAmount; i++) {
                 var reader = new FileReader();
-
-                reader.onload = function(e) {
-                    var div = document.createElement('div');
-                    div.className = 'col-md-2 mb-2';
-
+                reader.onload = function(event) {
+                    var col = document.createElement('div');
+                    col.className = 'col-md-2 mb-2';
                     var img = document.createElement('img');
-                    img.src = e.target.result;
+                    img.src = event.target.result;
                     img.className = 'img-thumbnail';
-                    img.style = 'height: 100px; object-fit: cover;';
-
-                    div.appendChild(img);
-                    preview.appendChild(div);
+                    img.style.height = '100px';
+                    img.style.objectFit = 'cover';
+                    col.appendChild(img);
+                    container.appendChild(col);
                 }
+                reader.readAsDataURL(input.files[i]);
+            }
+        }
 
-                reader.readAsDataURL(file);
-            });
+        // Xóa các ảnh hiện tại
+        var existingImages = document.getElementsByClassName('existing-image');
+        while(existingImages[0]) {
+            existingImages[0].parentNode.removeChild(existingImages[0]);
         }
     }
 </script>

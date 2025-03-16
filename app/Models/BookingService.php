@@ -12,30 +12,21 @@ class BookingService extends Model
 
     protected $fillable = [
         'booking_id',
-        'service_id',
-        'quantity',
+        'service_name',
         'price',
-        'service_date',
-        'notes',
+        'quantity',
+        'notes'
     ];
 
     protected $casts = [
-        'service_date' => 'datetime',
+        'price' => 'decimal:2'
     ];
 
     /**
-     * Get the booking that owns the booking service.
+     * Get the booking that owns the service.
      */
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
-    }
-
-    /**
-     * Get the service that owns the booking service.
-     */
-    public function service(): BelongsTo
-    {
-        return $this->belongsTo(Service::class);
     }
 }

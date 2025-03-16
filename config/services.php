@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'google' => [
+        'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+        'maps_id' => env('GOOGLE_MAPS_ID'),
+    ],
+
+    'here' => [
+        'api_key' => 'C1Bq5AZeU0eCLOs5LV3rqf7GE7QVMkhpPW5u3AGI-PK',
+    ],
+
 ];

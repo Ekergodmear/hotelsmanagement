@@ -24,27 +24,39 @@ class RoomSeeder extends Seeder
             $roomTypes = RoomType::all();
         }
 
-        // Tạo phòng đơn
-        $singleRoomType = $roomTypes->where('name', 'Phòng Đơn')->first();
+        // Tạo phòng tiêu chuẩn
+        $standardRoomType = $roomTypes->where('name', 'Phòng Tiêu Chuẩn')->first();
         for ($i = 1; $i <= 5; $i++) {
             Room::create([
                 'room_number' => '10' . $i,
-                'room_type_id' => $singleRoomType->id,
+                'room_type_id' => $standardRoomType->id,
                 'hotel_id' => $hotel->id,
                 'status' => 'available',
-                'notes' => 'Phòng đơn tầng 1',
+                'notes' => 'Phòng tiêu chuẩn tầng 1',
             ]);
         }
 
-        // Tạo phòng đôi
-        $doubleRoomType = $roomTypes->where('name', 'Phòng Đôi')->first();
+        // Tạo phòng deluxe
+        $deluxeRoomType = $roomTypes->where('name', 'Phòng Deluxe')->first();
         for ($i = 1; $i <= 5; $i++) {
             Room::create([
                 'room_number' => '20' . $i,
-                'room_type_id' => $doubleRoomType->id,
+                'room_type_id' => $deluxeRoomType->id,
                 'hotel_id' => $hotel->id,
                 'status' => 'available',
-                'notes' => 'Phòng đôi tầng 2',
+                'notes' => 'Phòng deluxe tầng 2',
+            ]);
+        }
+
+        // Tạo phòng suite
+        $suiteRoomType = $roomTypes->where('name', 'Phòng Suite')->first();
+        for ($i = 1; $i <= 3; $i++) {
+            Room::create([
+                'room_number' => '30' . $i,
+                'room_type_id' => $suiteRoomType->id,
+                'hotel_id' => $hotel->id,
+                'status' => 'available',
+                'notes' => 'Phòng suite tầng 3',
             ]);
         }
 
@@ -52,23 +64,11 @@ class RoomSeeder extends Seeder
         $familyRoomType = $roomTypes->where('name', 'Phòng Gia Đình')->first();
         for ($i = 1; $i <= 3; $i++) {
             Room::create([
-                'room_number' => '30' . $i,
+                'room_number' => '40' . $i,
                 'room_type_id' => $familyRoomType->id,
                 'hotel_id' => $hotel->id,
                 'status' => 'available',
-                'notes' => 'Phòng gia đình tầng 3',
-            ]);
-        }
-
-        // Tạo phòng suite
-        $suiteRoomType = $roomTypes->where('name', 'Phòng Suite')->first();
-        for ($i = 1; $i <= 2; $i++) {
-            Room::create([
-                'room_number' => '40' . $i,
-                'room_type_id' => $suiteRoomType->id,
-                'hotel_id' => $hotel->id,
-                'status' => 'available',
-                'notes' => 'Phòng suite tầng 4',
+                'notes' => 'Phòng gia đình tầng 4',
             ]);
         }
     }
